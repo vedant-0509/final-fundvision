@@ -1,0 +1,38 @@
+# ── FundVision Pro — Python Dependencies ──────────────────────────────────────
+# Install: pip install -r requirements.txt
+
+# ── Web Framework ──────────────────────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+
+# ── Database ───────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.30
+pymysql==1.1.0
+aiomysql==0.2.0
+alembic==1.13.1
+
+# ── Auth & Security ────────────────────────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
+email-validator==2.1.1
+
+# ── Data & Analytics (Python 3.12+ compatible versions) ───────────────────────
+numpy>=1.26.4
+pandas>=2.2.2
+scikit-learn>=1.4.2
+
+# ── Financial Data APIs ────────────────────────────────────────────────────────
+yfinance>=0.2.40
+requests==2.31.0
+httpx==0.27.0
+
+# ── AI Integration ─────────────────────────────────────────────────────────────
+anthropic==0.28.0
+
+# ── Utilities ──────────────────────────────────────────────────────────────────
+python-dotenv==1.0.1
+pydantic==2.7.1
+pydantic-settings==2.2.1
+tenacity==8.3.0
+cachetools==5.3.3
