@@ -1,11 +1,10 @@
-import { Search, Filter, RefreshCw, Plus, ChevronUp, ChevronDown, Star, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, Filter, RefreshCw, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { api, Fund } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
-// Matching categories used in your backend ingestion script
 const CATEGORIES = ['All', 'Equity', 'Debt', 'Hybrid', 'Smallcap', 'Midcap', 'Largecap'];
 const RISK_LEVELS = ['All', 'Low', 'Moderate', 'High', 'Very High'];
 
@@ -37,7 +36,6 @@ export default function Screener() {
       sort_order: sortBy.dir,
     };
     
-    // Clean params: only send if not 'All'
     if (category !== 'All') params.category = category;
     if (riskLevel !== 'All') params.risk_level = riskLevel;
     if (search) params.q = search;
@@ -54,10 +52,8 @@ export default function Screener() {
     }
   };
 
-  // Triggers
   useEffect(() => { fetchFunds(); }, [category, riskLevel, sortBy, limit]);
   
-  // Debounced search
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchFunds();
@@ -71,22 +67,31 @@ export default function Screener() {
 
   const handleAdd = async (fund: Fund) => {
     if (!user) {
-        showToast("Please login to manage portfolio", "error");
-        return;
+      showToast("Please login to manage portfolio", "error");
+      return;
     }
+
     setAdding(fund.id);
+    
     try {
-      // Adjusted to match common backend signature
-      await api.portfolio.add({ 
-        fund_id: fund.id, 
-        amount: 0, // Default starting amount
-        investment_type: 'lumpsum' 
-      });
-      showToast(`${fund.name.substring(0, 20)}... added!`, "success");
-    } catch (err) { 
-      showToast("Could not add fund. Try again later.", "error");
-    } finally { 
-      setAdding(null); 
+      // Use "buy" to align with Transaction ENUM. 
+      // Backend handles mapping this to "lumpsum" for the Holdings table.
+      const payload = {
+        fund_id: fund.id,
+        amount: 5000, 
+        investment_type: "buy", 
+        notes: "Added from Screener"
+      };
+
+      await api.portfolio.add(payload);
+      showToast(`${fund.name.substring(0, 25)}... added!`, "success");
+    } catch (err: any) {
+      console.error("Add failed:", err);
+      // Extracts the string error message from the backend detail field
+      const errorMsg = err.response?.data?.detail || "Could not add fund.";
+      showToast(typeof errorMsg === 'string' ? errorMsg : "Database error occurred", "error");
+    } finally {
+      setAdding(null);
     }
   };
 
@@ -123,8 +128,6 @@ export default function Screener() {
         {/* Filters Panel */}
         <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-8 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
-            
-            {/* Search Box */}
             <div className="lg:col-span-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input 
@@ -136,7 +139,6 @@ export default function Screener() {
               />
             </div>
 
-            {/* Category selection */}
             <div className="lg:col-span-2 flex flex-wrap gap-2">
               {CATEGORIES.map(c => (
                 <button 
@@ -151,7 +153,6 @@ export default function Screener() {
               ))}
             </div>
 
-            {/* Risk Selection */}
             <div className="lg:col-span-1 flex gap-2">
                 <select 
                   value={riskLevel} 

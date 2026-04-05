@@ -23,7 +23,7 @@ router = APIRouter()
 class AddHoldingRequest(BaseModel):
     fund_id: int
     amount: float = Field(..., gt=0)
-    investment_type: str = "lumpsum"   # sip | lumpsum
+    investment_type: str = "lumpsum"   # sip | lumpsum | buy
     sip_amount: float | None = None
     sip_date: int | None = None
     notes: str | None = None
@@ -44,6 +44,7 @@ async def _get_user_holdings(user_id: int, db: AsyncSession) -> list[dict]:
     rows = result.all()
     holdings = []
     for h, f in rows:
+        # Current value logic based on 5Y CAGR as a simple estimate
         current_value = float(h.invested_amount) * (1 + (float(f.cagr_5y or 0) / 100))
         holdings.append({
             "holding_id": h.id,
@@ -70,6 +71,7 @@ async def _get_user_holdings(user_id: int, db: AsyncSession) -> list[dict]:
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────
+
 @router.get("")
 async def get_portfolio(
     current_user: User = Depends(get_current_user),
@@ -78,7 +80,7 @@ async def get_portfolio(
     """Return full portfolio with health score and rebalancing advice."""
     holdings = await _get_user_holdings(current_user.id, db)
 
-    # Health score
+    # Health score computation
     score_inputs = [
         HoldingInput(
             fund_id=h["fund_id"], name=h["name"], category=h["category"],
@@ -127,51 +129,80 @@ async def add_holding(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Add or top-up a fund in the portfolio."""
+    """Add or top-up a fund in the portfolio with ENUM mapping and safe math."""
+    
+    # 1. Verify Fund exists
     fund_result = await db.execute(select(Fund).where(Fund.id == body.fund_id))
     fund = fund_result.scalar_one_or_none()
     if not fund:
         raise HTTPException(404, "Fund not found")
 
-    # Check existing holding
+    # 2. Check for existing active holding
     existing_result = await db.execute(
         select(PortfolioHolding).where(
             PortfolioHolding.user_id == current_user.id,
             PortfolioHolding.fund_id == body.fund_id,
+            PortfolioHolding.is_active == True
         )
     )
     holding = existing_result.scalar_one_or_none()
 
-    if holding:
-        holding.invested_amount += body.amount
-        holding.last_invested = date.today()
-    else:
-        holding = PortfolioHolding(
+    # 3. Handle ENUM Mismatches between tables
+    # portfolio_holdings table wants 'lumpsum' or 'sip'
+    holding_type = "lumpsum" if body.investment_type in ["buy", "lumpsum"] else "sip"
+    # transactions table wants 'buy' or 'sip'
+    txn_type = "buy" if body.investment_type in ["buy", "lumpsum"] else "sip"
+
+    # 4. Safe Math for Units (avoiding Decimal/Float conflicts)
+    nav_val = float(fund.nav) if fund.nav and float(fund.nav) > 0 else 10.0
+    amount_to_add = float(body.amount)
+    units_to_add = amount_to_add / nav_val
+
+    try:
+        if holding:
+            # Update existing holding
+            holding.invested_amount = float(holding.invested_amount) + amount_to_add
+            current_units = float(holding.units_held) if holding.units_held else 0.0
+            holding.units_held = current_units + units_to_add
+            holding.last_invested = date.today()
+        else:
+            # Create brand new holding with explicit defaults for MySQL
+            holding = PortfolioHolding(
+                user_id=current_user.id,
+                fund_id=body.fund_id,
+                invested_amount=amount_to_add,
+                units_held=units_to_add,
+                avg_nav=nav_val,
+                investment_type=holding_type,
+                sip_amount=body.sip_amount or 0.0,
+                sip_date=body.sip_date or 1,
+                first_invested=date.today(),
+                last_invested=date.today(),
+                is_active=True,
+                notes=body.notes
+            )
+            db.add(holding)
+
+        # 5. Record the Transaction
+        db.add(Transaction(
             user_id=current_user.id,
             fund_id=body.fund_id,
-            invested_amount=body.amount,
-            investment_type=body.investment_type,
-            sip_amount=body.sip_amount,
-            sip_date=body.sip_date,
-            first_invested=date.today(),
-            last_invested=date.today(),
-            notes=body.notes,
-        )
-        db.add(holding)
+            txn_type=txn_type,
+            amount=amount_to_add,
+            nav_at_txn=nav_val,
+            units=units_to_add,
+            txn_date=date.today(),
+            notes=body.notes or "Added from Screener"
+        ))
 
-    # Record transaction
-    db.add(Transaction(
-        user_id=current_user.id,
-        fund_id=body.fund_id,
-        txn_type=body.investment_type,
-        amount=body.amount,
-        nav_at_txn=fund.nav,
-        units=body.amount / float(fund.nav) if fund.nav else None,
-        txn_date=date.today(),
-    ))
+        await db.commit()
+        return {"message": "Success", "fund": fund.name}
 
-    await db.commit()
-    return {"message": "Holding updated", "fund": fund.name, "amount": body.amount}
+    except Exception as e:
+        await db.rollback()
+        # This will print the EXACT reason for the 500 error in your backend terminal
+        print(f"CRITICAL DATABASE ERROR: {str(e)}")
+        raise HTTPException(500, detail=f"Database Error: {str(e)}")
 
 
 @router.get("/transactions")
@@ -203,6 +234,7 @@ async def get_transactions(
         ]
     }
 
+
 @router.get("/forecast/{fund_id}")
 async def forecast_fund(
     fund_id: int,
@@ -226,6 +258,7 @@ async def forecast_fund(
         "fund": {"id": fund.id, "name": fund.name, "nav": float(fund.nav or 0)},
         "projections": [{"label": p.label, "value": p.value, "projected": p.is_projected} for p in projections],
     }
+
 
 @router.delete("/{fund_id}")
 async def remove_holding(

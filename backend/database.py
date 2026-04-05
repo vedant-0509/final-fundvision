@@ -33,11 +33,14 @@ class Base(DeclarativeBase):
 
 
 # ── Dependency: inject DB session ─────────────────────────────────────────────
+
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:
             yield session
-            await session.commit()
+            # REMOVED: await session.commit() 
+            # We want the specific endpoint to decide when to commit.
         except Exception:
             await session.rollback()
             raise
