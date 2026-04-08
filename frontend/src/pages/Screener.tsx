@@ -8,11 +8,11 @@ import { useAuth } from '../context/AuthContext';
 const CATEGORIES = ['All', 'Equity', 'Debt', 'Hybrid', 'Smallcap', 'Midcap', 'Largecap'];
 const RISK_LEVELS = ['All', 'Low', 'Moderate', 'High', 'Very High'];
 
-const RISK_BG: Record<string, string> = { 
-  'Low': 'bg-emerald-50 text-emerald-700 border-emerald-100', 
-  'Moderate': 'bg-blue-50 text-blue-700 border-blue-100', 
-  'High': 'bg-orange-50 text-orange-700 border-orange-100', 
-  'Very High': 'bg-red-50 text-red-700 border-red-100' 
+const RISK_BG: Record<string, string> = {
+  'Low': 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  'Moderate': 'bg-blue-50 text-blue-700 border-blue-100',
+  'High': 'bg-orange-50 text-orange-700 border-orange-100',
+  'Very High': 'bg-red-50 text-red-700 border-red-100'
 };
 
 export default function Screener() {
@@ -31,29 +31,29 @@ export default function Screener() {
   const fetchFunds = async () => {
     setLoading(true);
     const params: Record<string, string> = {
-      limit: limit, 
-      sort_by: sortBy.col, 
+      limit: limit,
+      sort_by: sortBy.col,
       sort_order: sortBy.dir,
     };
-    
+
     if (category !== 'All') params.category = category;
     if (riskLevel !== 'All') params.risk_level = riskLevel;
     if (search) params.q = search;
 
     try {
       const res = await api.funds.list(params);
-      setFunds(res.funds || []); 
+      setFunds(res.funds || []);
       setTotal(res.total || 0);
-    } catch (err) { 
+    } catch (err) {
       console.error("Fetch error:", err);
-      setFunds([]); 
-    } finally { 
-      setLoading(false); 
+      setFunds([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => { fetchFunds(); }, [category, riskLevel, sortBy, limit]);
-  
+
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchFunds();
@@ -72,14 +72,14 @@ export default function Screener() {
     }
 
     setAdding(fund.id);
-    
+
     try {
       // Use "buy" to align with Transaction ENUM. 
       // Backend handles mapping this to "lumpsum" for the Holdings table.
       const payload = {
         fund_id: fund.id,
-        amount: 5000, 
-        investment_type: "buy", 
+        amount: 5000,
+        investment_type: "buy",
         notes: "Added from Screener"
       };
 
@@ -102,7 +102,6 @@ export default function Screener() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header variant="light" />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
@@ -110,17 +109,17 @@ export default function Screener() {
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Fund Screener</h1>
             <p className="text-gray-500 mt-1">Analyze and compare {total.toLocaleString()} mutual funds</p>
           </div>
-          
+
           <div className="flex items-center gap-2 text-sm text-gray-500 bg-white px-3 py-1.5 rounded-lg border border-gray-200">
             <span>Show:</span>
-            <select 
-                value={limit} 
-                onChange={(e) => setLimit(e.target.value)}
-                className="bg-transparent font-semibold text-gray-900 focus:outline-none cursor-pointer"
+            <select
+              value={limit}
+              onChange={(e) => setLimit(e.target.value)}
+              className="bg-transparent font-semibold text-gray-900 focus:outline-none cursor-pointer"
             >
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
             </select>
           </div>
         </div>
@@ -130,23 +129,22 @@ export default function Screener() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
             <div className="lg:col-span-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input 
-                type="text" 
-                value={search} 
+              <input
+                type="text"
+                value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search by name..."
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" 
+                placeholder="Search funds by name or category..."
+                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm text-gray-900 placeholder-gray-400 transition-all duration-200 focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50/50 outline-none"
               />
             </div>
 
             <div className="lg:col-span-2 flex flex-wrap gap-2">
               {CATEGORIES.map(c => (
-                <button 
-                  key={c} 
+                <button
+                  key={c}
                   onClick={() => setCategory(c)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    category === c ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${category === c ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    }`}
                 >
                   {c}
                 </button>
@@ -154,31 +152,34 @@ export default function Screener() {
             </div>
 
             <div className="lg:col-span-1 flex gap-2">
-                <select 
-                  value={riskLevel} 
-                  onChange={e => setRiskLevel(e.target.value)}
-                  className="flex-grow border border-gray-200 rounded-xl text-sm px-3 py-2.5 bg-gray-50 focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option disabled>Filter Risk</option>
-                  {RISK_LEVELS.map(r => <option key={r} value={r}>{r} Risk</option>)}
-                </select>
-                
-                <button 
-                  onClick={fetchFunds} 
-                  className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors"
-                  title="Refresh data"
-                >
-                  <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                </button>
+              <select
+                value={riskLevel}
+                onChange={e => setRiskLevel(e.target.value)}
+                className="flex-grow bg-gray-50 border border-transparent rounded-xl text-sm text-gray-900 px-4 py-2.5 outline-none transition-all duration-200 hover:bg-gray-100 focus:bg-white focus:border-indigo-200 focus:ring-4 focus:ring-indigo-50/50 appearance-none cursor-pointer"
+              >
+                <option value="">All Risk Levels</option>
+                {RISK_LEVELS.map(r => (
+                  <option key={r} value={r} className="text-gray-900">
+                    {r.charAt(0).toUpperCase() + r.slice(1)} Risk
+                  </option>
+                ))}
+              </select>
+
+              <button
+                onClick={fetchFunds}
+                className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors"
+                title="Refresh data"
+              >
+                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              </button>
             </div>
           </div>
         </div>
 
         {/* Floating Toast Notification */}
         {toast && (
-          <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-6 py-3 rounded-full shadow-2xl border animate-bounce ${
-            toast.type === 'success' ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-red-600 border-red-400 text-white'
-          }`}>
+          <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-6 py-3 rounded-full shadow-2xl border animate-bounce ${toast.type === 'success' ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-red-600 border-red-400 text-white'
+            }`}>
             {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             <span className="font-bold text-sm">{toast.msg}</span>
           </div>
@@ -204,11 +205,11 @@ export default function Screener() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
-                   [...Array(5)].map((_, i) => (
+                  [...Array(5)].map((_, i) => (
                     <tr key={i} className="animate-pulse">
                       <td colSpan={6} className="px-6 py-8"><div className="h-4 bg-gray-100 rounded w-full"></div></td>
                     </tr>
-                   ))
+                  ))
                 ) : funds.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-20 text-center">
@@ -240,8 +241,8 @@ export default function Screener() {
                         {f.nav?.toFixed(2)}
                       </td>
                       <td className="px-6 py-5 text-center">
-                        <button 
-                          onClick={() => handleAdd(f)} 
+                        <button
+                          onClick={() => handleAdd(f)}
                           disabled={adding === f.id}
                           className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-gray-200 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm disabled:opacity-50 group-hover:scale-110"
                         >
@@ -256,8 +257,6 @@ export default function Screener() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

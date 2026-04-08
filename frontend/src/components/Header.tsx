@@ -12,6 +12,7 @@ export default function Header({ variant = 'light' }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const isDark = variant === 'dark';
+  const [searchTerm, setSearchTerm] = useState('');
 
   const base = isDark
     ? 'bg-slate-800 border-slate-700 text-white'
@@ -21,6 +22,13 @@ export default function Header({ variant = 'light' }: HeaderProps) {
     : 'text-gray-700 hover:text-gray-900';
 
   const handleLogout = () => { logout(); navigate('/'); };
+  const handleSearch = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchTerm.trim()) {
+      // Navigate to the new page with the ticker as a parameter
+      navigate(`/fund/${searchTerm.toUpperCase()}`);
+      setSearchTerm(''); // Clear search
+    }
+  };
 
   return (
     <header className={`${base} border-b sticky top-0 z-50`}>
@@ -35,7 +43,7 @@ export default function Header({ variant = 'light' }: HeaderProps) {
               <div className="w-1.5 h-5 bg-emerald-500 rounded-sm" />
             </div>
             <span className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              FundVision <span className="text-emerald-500 text-sm font-semibold">Pro</span>
+              FundVision <span className="text-emerald-500 text-sm font-semibold"></span>
             </span>
           </Link>
 
@@ -73,13 +81,30 @@ export default function Header({ variant = 'light' }: HeaderProps) {
           </nav>
 
           {/* Search bar (home only) */}
-          {location.pathname === '/' && (
+
+          {/* {location.pathname === '/' && (
             <div className="hidden lg:flex items-center flex-1 max-w-sm mx-8">
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search for a company"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          )} */}
+
+          {location.pathname === '/' && (
+            <div className="hidden lg:flex items-center flex-1 max-w-sm mx-8">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleSearch}
+                  placeholder="Enter Ticker (e.g. AAPL, TSLA)"
                   className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

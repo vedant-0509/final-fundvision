@@ -1,21 +1,21 @@
 import { Search, TrendingUp, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import { useNavigate, Link } from 'react-router-dom';
 import { api, Fund, MarketIndex } from '../api/client';
 
 const QUICK_PICKS = ['Parag Parikh Flexi Cap', 'Mirae Asset Large Cap', 'SBI Small Cap', 'Axis Bluechip', 'HDFC Mid Cap', 'Quant Tax Plan', 'Nippon Small Cap', 'Kotak Emerging Equity'];
 
 const MOCK_MARKET: Record<string, MarketIndex> = {
-  'Sensex':    { value: 73648.62, change: 312.45,  change_pct: 0.43, symbol: '^BSESN' },
-  'Nifty 50':  { value: 22326.90, change: 97.30,   change_pct: 0.44, symbol: '^NSEI'  },
-  'Nifty Bank':{ value: 48120.50, change: -145.20, change_pct: -0.30,symbol: '^NSEBANK'},
+  'Sensex': { value: 73648.62, change: 312.45, change_pct: 0.43, symbol: '^BSESN' },
+  'Nifty 50': { value: 22326.90, change: 97.30, change_pct: 0.44, symbol: '^NSEI' },
+  'Nifty Bank': { value: 48120.50, change: -145.20, change_pct: -0.30, symbol: '^NSEBANK' },
 };
 
 const RISK_COLOR: Record<string, string> = {
-  'Low': 'text-emerald-600', 'Moderate': 'text-gray-700',
-  'High': 'text-yellow-600', 'Very High': 'text-red-600',
+  'Low': 'text-emerald-600 dark:text-emerald-400',
+  'Moderate': 'text-gray-700 dark:text-slate-300',
+  'High': 'text-yellow-600 dark:text-yellow-500',
+  'Very High': 'text-red-600 dark:text-red-500',
 };
 
 export default function Home() {
@@ -26,7 +26,6 @@ export default function Home() {
   const [sort, setSort] = useState<{ col: keyof Fund; dir: 'asc' | 'desc' }>({ col: 'cagr_5y', dir: 'desc' });
   const [loading, setLoading] = useState(false);
 
-  // Fetch funds
   useEffect(() => {
     setLoading(true);
     api.funds.list({ limit: 20, sort_by: 'cagr_5y', sort_order: 'desc' })
@@ -35,18 +34,32 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Fetch market indices
   useEffect(() => {
     api.market.indices()
       .then(data => {
         const cleaned: Record<string, MarketIndex> = {};
-        Object.entries(data).forEach(([k, v]) => { if (typeof v === 'object' && 'value' in v) cleaned[k] = v as MarketIndex; });
+        Object.entries(data).forEach(([k, v]) => {
+          if (typeof v === 'object' && 'value' in v) cleaned[k] = v as MarketIndex;
+        });
         if (Object.keys(cleaned).length > 0) setMarket(cleaned);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
-  // Sorted & filtered funds
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (search.trim()) {
+      // Find if the search matches a fund name exactly to get its ID, 
+      // otherwise, we go to the screener with a search query.
+      const matchedFund = funds.find(f => f.name.toLowerCase() === search.toLowerCase().trim());
+      if (matchedFund) {
+        navigate(`/fund/${matchedFund.id}`);
+      } else {
+        navigate(`/screener?q=${encodeURIComponent(search.trim())}`);
+      }
+    }
+  };
+
   const displayed = [...funds]
     .filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()) || f.fund_house?.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
@@ -60,144 +73,150 @@ export default function Home() {
   };
 
   const SortIcon = ({ col }: { col: keyof Fund }) => {
-    if (sort.col !== col) return <span className="opacity-30">↑↓</span>;
-    return <span className="text-blue-600">{sort.dir === 'desc' ? '↓' : '↑'}</span>;
+    if (sort.col !== col) return <span className="opacity-30 ml-1 text-[10px]">↑↓</span>;
+    return <span className="text-emerald-500 ml-1">{sort.dir === 'desc' ? '↓' : '↑'}</span>;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header variant="light" />
-
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <section className="bg-white py-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0B0E14] transition-colors duration-300">
+      {/* ── Hero Section ─────────────────────────────────────────── */}
+      <section className="bg-white dark:bg-[#0B0E14] py-20 border-b border-gray-100 dark:border-slate-800">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="flex items-end gap-1 h-12">
-              <div className="w-3 h-6 bg-emerald-500 rounded" />
-              <div className="w-3 h-8 bg-emerald-500 rounded" />
-              <div className="w-3 h-11 bg-emerald-500 rounded" />
+              <div className="w-3 h-6 bg-emerald-500 rounded animate-pulse" />
+              <div className="w-3 h-8 bg-emerald-500 rounded animate-pulse delay-75" />
+              <div className="w-3 h-11 bg-emerald-500 rounded animate-pulse delay-150" />
             </div>
-            <h1 className="text-5xl font-bold text-gray-900">FundVision</h1>
+            <h1 className="text-5xl font-bold text-gray-900 dark:text-white tracking-tight">FundVision</h1>
           </div>
-          <p className="text-xl text-gray-600 mb-12">
-            AI-powered mutual fund analysis and screening tool for investors in India
+          <p className="text-xl text-gray-600 dark:text-slate-400 mb-12 max-w-2xl mx-auto">
+            AI-powered mutual fund analysis and screening tool for investors in India.
           </p>
 
-          <div className="relative max-w-2xl mx-auto mb-12">
+          <form onSubmit={handleSearchSubmit} className="relative max-w-2xl mx-auto mb-12">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search for a fund or fund house…"
-              className="w-full pl-12 pr-4 py-4 bg-white border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+              placeholder="Search for a fund (e.g. SBI, HDFC)..."
+              className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white shadow-sm transition-all"
             />
-          </div>
+          </form>
 
-          <p className="text-gray-500 mb-4 text-sm">Or analyse:</p>
+          <p className="text-gray-500 dark:text-slate-500 mb-4 text-sm font-medium uppercase tracking-widest">Quick Access:</p>
           <div className="flex flex-wrap justify-center gap-2">
             {QUICK_PICKS.map(name => (
-              <button key={name} onClick={() => setSearch(name)}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all">
+              <button
+                key={name}
+                onClick={() => setSearch(name)}
+                className="px-4 py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm text-gray-700 dark:text-slate-300 hover:border-emerald-500 dark:hover:border-emerald-500 transition-all hover:text-emerald-500"
+              >
                 {name}
               </button>
             ))}
           </div>
 
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
             <button onClick={() => navigate('/screener')}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold transition-colors flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" /> Browse All Funds
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+              <TrendingUp className="w-5 h-5" /> Browse Screener
             </button>
             <button onClick={() => navigate('/ai-advisor')}
-              className="border-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50 px-8 py-3 rounded-xl font-semibold transition-colors">
-              ✨ Get AI Recommendation
+              className="border-2 border-emerald-500 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 px-8 py-3.5 rounded-xl font-bold transition-all">
+              ✨ AI Recommendation
             </button>
           </div>
         </div>
       </section>
 
-      {/* ── Market Indices ──────────────────────────────────────── */}
+      {/* ── Market Data ─────────────────────────────────────────── */}
       <section className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {Object.entries(market).map(([name, idx]) => (
-              <div key={name} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
-                <h3 className="text-2xl font-bold text-gray-900">{idx.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
-                <p className="text-gray-500 text-sm mt-1">{name}</p>
-                <p className={`text-sm font-medium mt-1 flex items-center gap-1 ${idx.change_pct >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              <div key={name} className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-5 shadow-sm">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{idx.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
+                <p className="text-gray-500 dark:text-slate-500 text-sm mt-1">{name}</p>
+                <p className={`text-sm font-bold mt-2 flex items-center gap-1 ${idx.change_pct >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                   {idx.change_pct >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                   {idx.change >= 0 ? '+' : ''}{idx.change.toFixed(2)} ({idx.change_pct >= 0 ? '+' : ''}{idx.change_pct.toFixed(2)}%)
                 </p>
               </div>
             ))}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-2xl font-bold text-gray-700">Closed</h3>
-              <p className="text-gray-500 text-sm mt-1">Market Status</p>
-              <p className="text-emerald-600 text-sm mt-1">9:15 AM – 3:30 PM IST</p>
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-5">
+              <h3 className="text-2xl font-bold text-gray-400 dark:text-slate-600 uppercase tracking-tighter">Closed</h3>
+              <p className="text-gray-500 dark:text-slate-500 text-sm mt-1">Market Status</p>
+              <p className="text-emerald-600 dark:text-emerald-500 text-sm mt-2 font-semibold">Live from 9:15 AM IST</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Fund Table ──────────────────────────────────────────── */}
-      <section className="py-8">
+      {/* ── Top Funds Table ─────────────────────────────────────── */}
+      <section className="py-8 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Top Mutual Funds</h2>
-            <button onClick={() => navigate('/screener')}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
-              View All <ArrowUpRight className="w-4 h-4" />
-            </button>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Top Performing Funds</h2>
+            <Link to="/screener" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline font-bold flex items-center gap-1">
+              Explore Full Screener <ArrowUpRight className="w-4 h-4" />
+            </Link>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-xl shadow-gray-200/50 dark:shadow-none">
             {loading ? (
-              <div className="flex items-center justify-center py-16">
-                <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mr-3" />
-                <span className="text-gray-500">Loading funds…</span>
+              <div className="flex flex-col items-center justify-center py-24 gap-4">
+                <RefreshCw className="w-10 h-10 text-emerald-500 animate-spin" />
+                <span className="text-gray-500 dark:text-slate-400 font-medium">Analyzing market data...</span>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-800">
                     <tr>
                       {[
-                        { label: 'NAME',             col: null },
-                        { label: 'TYPE',             col: null },
-                        { label: '3Y CAGR',          col: 'cagr_3y' as keyof Fund },
-                        { label: '5Y CAGR',          col: 'cagr_5y' as keyof Fund },
-                        { label: 'Sharpe Ratio',     col: 'sharpe_ratio' as keyof Fund },
-                        { label: 'Expense Ratio',    col: 'expense_ratio' as keyof Fund },
-                        { label: 'AUM (Cr)',         col: 'aum_cr' as keyof Fund },
-                        { label: 'RISK LEVEL',       col: null },
+                        { label: 'Name', col: null },
+                        { label: '3Y CAGR', col: 'cagr_3y' as keyof Fund },
+                        { label: '5Y CAGR', col: 'cagr_5y' as keyof Fund },
+                        { label: 'Exp. Ratio', col: 'expense_ratio' as keyof Fund },
+                        { label: 'AUM (Cr)', col: 'aum_cr' as keyof Fund },
+                        { label: 'Risk', col: null },
                       ].map(({ label, col }) => (
                         <th key={label}
                           onClick={() => col && toggleSort(col)}
-                          className={`px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap ${col ? 'cursor-pointer hover:text-gray-700 select-none' : ''}`}>
-                          {label} {col && <SortIcon col={col} />}
+                          className={`px-6 py-4 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest ${col ? 'cursor-pointer hover:text-emerald-500' : ''}`}>
+                          <div className="flex items-center">
+                            {label} {col && <SortIcon col={col} />}
+                          </div>
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                     {displayed.map(f => (
-                      <tr key={f.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate('/screener')}>
-                        <td className="px-5 py-4 text-sm font-medium text-gray-900 max-w-xs truncate">{f.name}</td>
-                        <td className="px-5 py-4 text-sm text-gray-600 capitalize">{f.asset_type === 'equity' ? 'Mutual Fund' : f.asset_type === 'debt' ? 'Debt Fund' : 'Hybrid Fund'}</td>
-                        <td className="px-5 py-4 text-sm font-medium text-emerald-600">{f.cagr_3y?.toFixed(1)}%</td>
-                        <td className="px-5 py-4 text-sm font-medium text-emerald-600">{f.cagr_5y?.toFixed(1)}%</td>
-                        <td className="px-5 py-4 text-sm text-gray-700">{f.sharpe_ratio?.toFixed(2)}</td>
-                        <td className={`px-5 py-4 text-sm font-medium ${(f.expense_ratio || 0) > 1 ? 'text-red-500' : 'text-gray-700'}`}>
-                          {f.expense_ratio?.toFixed(2)}%
+                      <tr
+                        key={f.id}
+                        className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
+                        onClick={() => navigate(`/fund/${f.id}`)}
+                      >
+                        <td className="px-6 py-5">
+                          <div className="font-bold text-gray-900 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                            {f.name}
+                          </div>
+                          <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{f.fund_house} • {f.category}</div>
                         </td>
-                        <td className="px-5 py-4 text-sm text-gray-700">₹{f.aum_cr?.toLocaleString('en-IN')}</td>
-                        <td className={`px-5 py-4 text-sm font-medium ${RISK_COLOR[f.risk_level] || 'text-gray-700'}`}>{f.risk_level}</td>
+                        <td className="px-6 py-5 text-emerald-600 dark:text-emerald-400 font-bold">{f.cagr_3y?.toFixed(1)}%</td>
+                        <td className="px-6 py-5 text-emerald-600 dark:text-emerald-400 font-bold">{f.cagr_5y?.toFixed(1)}%</td>
+                        <td className="px-6 py-5 text-gray-600 dark:text-slate-400">{f.expense_ratio?.toFixed(2)}%</td>
+                        <td className="px-6 py-5 text-gray-900 dark:text-slate-300 font-medium">₹{f.aum_cr?.toLocaleString('en-IN')}</td>
+                        <td className="px-6 py-5">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${RISK_COLOR[f.risk_level] || 'text-slate-400'} bg-current bg-opacity-10 border border-current`}>
+                            {f.risk_level}
+                          </span>
+                        </td>
                       </tr>
                     ))}
-                    {displayed.length === 0 && !loading && (
-                      <tr><td colSpan={8} className="text-center py-12 text-gray-400">No funds found matching "{search}"</td></tr>
-                    )}
                   </tbody>
                 </table>
               </div>
@@ -205,13 +224,10 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }
 
-// ── Fallback data if API is down ──────────────────────────────────────────────
 const FALLBACK_FUNDS: Fund[] = [
   { id: 1, scheme_code: '119551', name: 'Mirae Asset Large Cap Fund', fund_house: 'Mirae Asset', category: 'largecap', asset_type: 'equity', nav: 95.4, cagr_1y: 16.2, cagr_3y: 14.1, cagr_5y: 14.2, cagr_10y: 16.8, sharpe_ratio: 1.42, expense_ratio: 0.54, aum_cr: 37820, risk_level: 'Low', star_rating: 5, lock_in_years: 0 },
   { id: 2, scheme_code: '112090', name: 'Axis Bluechip Fund', fund_house: 'Axis', category: 'largecap', asset_type: 'equity', nav: 52.3, cagr_1y: 13.1, cagr_3y: 12.9, cagr_5y: 13.8, cagr_10y: 15.1, sharpe_ratio: 1.31, expense_ratio: 0.63, aum_cr: 42100, risk_level: 'Low', star_rating: 5, lock_in_years: 0 },

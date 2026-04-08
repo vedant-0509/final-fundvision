@@ -40,7 +40,7 @@ class Settings(BaseSettings):
         return f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     # ── AI Config (Google Gemini) ──────────────────────────────────────────
-    GOOGLE_API_KEY: str = "AIzaSyAi7zJyAqkBsAmVu3meKu2Q_Dt6YYzj5vY"
+    GOOGLE_API_KEY: str = "AIzaSyAI6ULVU-EW2nMWX5oXk1SaxWHqAnTBAmg"
     GEMINI_MODEL: str = "gemini-1.5-flash"
     AMFI_NAV_URL: str = "https://www.amfiindia.com/spages/NAVAll.txt"
 

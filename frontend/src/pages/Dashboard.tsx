@@ -7,20 +7,20 @@ import { OverallGauge, HealthGauge } from '../components/HealthGauge';
 import { api, PortfolioResponse, AdviceItem } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
-const PIE_COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
-const fmt = (n: number) => `₹${n >= 10000000 ? (n/10000000).toFixed(2)+'Cr' : n >= 100000 ? (n/100000).toFixed(1)+'L' : n.toLocaleString('en-IN')}`;
+const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+const fmt = (n: number) => `₹${n >= 10000000 ? (n / 10000000).toFixed(2) + 'Cr' : n >= 100000 ? (n / 100000).toFixed(1) + 'L' : n.toLocaleString('en-IN')}`;
 
 const PRIORITY_STYLE: Record<string, string> = {
-  high:   'border-l-4 border-red-400 bg-red-50',
+  high: 'border-l-4 border-red-400 bg-red-50',
   medium: 'border-l-4 border-amber-400 bg-amber-50',
-  low:    'border-l-4 border-blue-400 bg-blue-50',
-  info:   'border-l-4 border-emerald-400 bg-emerald-50',
+  low: 'border-l-4 border-blue-400 bg-blue-50',
+  info: 'border-l-4 border-emerald-400 bg-emerald-50',
 };
 const PRIORITY_ICON: Record<string, JSX.Element> = {
-  high:   <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />,
+  high: <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />,
   medium: <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />,
-  low:    <Info className="w-4 h-4 text-blue-500 flex-shrink-0" />,
-  info:   <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />,
+  low: <Info className="w-4 h-4 text-blue-500 flex-shrink-0" />,
+  info: <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />,
 };
 
 export default function Dashboard() {
@@ -47,7 +47,6 @@ export default function Dashboard() {
 
   if (loading) return (
     <div className="min-h-screen bg-gray-50">
-      <Header variant="light" />
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-3" />
@@ -63,7 +62,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header variant="light" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
@@ -216,7 +214,7 @@ export default function Dashboard() {
                     </td>
                     <td className="px-4 py-4 text-sm text-emerald-600 font-medium">{h.cagr_5y?.toFixed(1)}%</td>
                     <td className="px-4 py-4 text-sm text-gray-700">{h.sharpe_ratio?.toFixed(2)}</td>
-                    <td className={`px-4 py-4 text-sm font-medium ${(h.expense_ratio||0) > 1 ? 'text-red-500' : 'text-gray-700'}`}>{h.expense_ratio?.toFixed(2)}%</td>
+                    <td className={`px-4 py-4 text-sm font-medium ${(h.expense_ratio || 0) > 1 ? 'text-red-500' : 'text-gray-700'}`}>{h.expense_ratio?.toFixed(2)}%</td>
                     <td className="px-4 py-4">
                       <span className={`text-xs px-2 py-1 rounded ${h.risk_level === 'Low' ? 'bg-emerald-50 text-emerald-700' : h.risk_level === 'Very High' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{h.risk_level}</span>
                     </td>
@@ -233,8 +231,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

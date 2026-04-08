@@ -90,15 +90,53 @@ def _score_fund(fund: Fund, goal: str, horizon: str) -> float:
     mod = HORIZON_MODIFIER.get(horizon, {}).get(fund.category, 1.0)
     return round(score * mod, 3)
 
+# def _get_allocation(risk: str, goal: str) -> dict[str, int]:
+#     allocations = {
+#         "medium": {"debt": 15, "largecap": 35, "hybrid": 15, "midcap": 25, "smallcap": 10},
+#         "high": {"debt": 5, "largecap": 20, "flexicap": 15, "midcap": 35, "smallcap": 25},
+#     }
+#     alloc = allocations.get(risk, allocations["medium"]).copy()
+#     if goal == "emergency":
+#         alloc = {"debt": 80, "largecap": 20}
+#     return alloc
+
+
+
+
+
+
 def _get_allocation(risk: str, goal: str) -> dict[str, int]:
+    # Expanded logic to ensure 4-5 different categories for each profile
     allocations = {
-        "medium": {"debt": 15, "largecap": 35, "hybrid": 15, "midcap": 25, "smallcap": 10},
-        "high": {"debt": 5, "largecap": 20, "flexicap": 15, "midcap": 35, "smallcap": 25},
+        "very_low": {
+            "debt": 50, "liquid": 20, "hybrid": 20, "largecap": 10
+        },
+        "low": {
+            "debt": 35, "hybrid": 25, "largecap": 25, "index": 15
+        },
+        "medium": {
+            "largecap": 30, "midcap": 25, "flexicap": 20, "hybrid": 15, "debt": 10
+        },
+        "high": {
+            "midcap": 30, "smallcap": 25, "flexicap": 20, "largecap": 15, "sectoral": 10
+        },
+        "very_high": {
+            "smallcap": 35, "midcap": 25, "sectoral": 20, "flexicap": 10, "thematic": 10
+        },
     }
-    alloc = allocations.get(risk, allocations["medium"]).copy()
+    
+    # Check if goal is emergency
     if goal == "emergency":
-        alloc = {"debt": 80, "largecap": 20}
-    return alloc
+        return {"debt": 70, "liquid": 30}
+    
+    # Get the allocation or default to medium if risk string doesn't match
+    return allocations.get(risk, allocations["medium"])
+
+
+
+
+
+
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────
 

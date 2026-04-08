@@ -1,7 +1,44 @@
+# --- System Files ---
+.DS_Store
+Thumbs.db
+*.log
+
+# --- Python / Backend ---
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+bin/
+lib/
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+# Environment secrets
+.env
+.env.local
+
+# --- Node / Frontend ---
+# Dependencies
 node_modules/
 frontend/node_modules/
-backend/venv/
-backend/__pycache__/
-.env
+# Production builds
 dist/
+build/
+# Test coverage
+coverage/
+# Vite/Next.js cache
+.vite/
+.next/
+
+# --- IDEs / Editors ---
 .vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- Database ---
+*.sqlite3
+*.db

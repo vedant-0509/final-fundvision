@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Legend 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
 } from 'recharts';
-import { 
-  Calculator as CalcIcon, 
-  TrendingUp, 
-  Moon, 
-  Sun, 
-  Zap, 
-  ShieldCheck, 
+import {
+  Calculator as CalcIcon,
+  TrendingUp,
+  Moon,
+  Sun,
+  Zap,
+  ShieldCheck,
   CheckCircle,
   IndianRupee,
   ArrowUpRight
@@ -26,8 +26,8 @@ import { api, SipResult, LumpsumResult } from '../api/client';
 
 type Mode = 'sip' | 'lumpsum';
 
-const fmt = (n: number) => 
-  `₹${n >= 10000000 ? (n/10000000).toFixed(2)+'Cr' : n >= 100000 ? (n/100000).toFixed(2)+'L' : n.toLocaleString('en-IN')}`;
+const fmt = (n: number) =>
+  `₹${n >= 10000000 ? (n / 10000000).toFixed(2) + 'Cr' : n >= 100000 ? (n / 100000).toFixed(2) + 'L' : n.toLocaleString('en-IN')}`;
 
 // --- Top 3 Recommended Funds Data ---
 const TOP_FUNDS = [
@@ -61,20 +61,20 @@ export default function Calculator() {
   const handleCalculate = async () => {
     setLoading(true);
     try {
-      const response = mode === 'sip' 
-        ? await api.calculator.sip({ 
-            monthly_amount: amount, 
-            expected_return: rate, 
-            tenure_years: years, 
-            inflation_rate: 6, 
-            step_up_pct: 0 
-          })
-        : await api.calculator.lumpsum({ 
-            principal: amount, 
-            expected_return: rate, 
-            tenure_years: years, 
-            inflation_rate: 6 
-          });
+      const response = mode === 'sip'
+        ? await api.calculator.sip({
+          monthly_amount: amount,
+          expected_return: rate,
+          tenure_years: years,
+          inflation_rate: 6,
+          step_up_pct: 0
+        })
+        : await api.calculator.lumpsum({
+          principal: amount,
+          expected_return: rate,
+          tenure_years: years,
+          inflation_rate: 6
+        });
       setResult(response);
     } catch (error) {
       console.error("Calculation Error:", error);
@@ -85,7 +85,6 @@ export default function Calculator() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-slate-900 text-white' : 'bg-gray-50 text-slate-900'}`}>
-      <Header variant={isDark ? 'dark' : 'light'} />
 
       <main className="max-w-6xl mx-auto px-4 py-10">
         <div className="flex justify-between items-center mb-10">
@@ -93,7 +92,7 @@ export default function Calculator() {
             <h1 className="text-3xl font-extrabold tracking-tight">FundVision Pro</h1>
             <p className="text-gray-500 dark:text-gray-400 font-medium">Smart Investment Forecaster</p>
           </div>
-          <button 
+          <button
             onClick={() => setIsDark(!isDark)}
             className="p-3 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 hover:scale-105 active:scale-95 transition-all"
           >
@@ -105,13 +104,13 @@ export default function Calculator() {
           {/* --- Input Panel --- */}
           <div className="lg:col-span-1 p-8 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-gray-100 dark:border-slate-700">
             <div className="flex p-1.5 bg-gray-100 dark:bg-slate-900 rounded-2xl mb-8">
-              <button 
+              <button
                 onClick={() => setMode('sip')}
                 className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'sip' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
               >
                 SIP
               </button>
-              <button 
+              <button
                 onClick={() => setMode('lumpsum')}
                 className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'lumpsum' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
               >
@@ -120,36 +119,36 @@ export default function Calculator() {
             </div>
 
             <div className="space-y-10">
-              <InputGroup 
-                label={mode === 'sip' ? "Monthly SIP" : "One-time Investment"} 
-                value={amount} 
-                min={500} 
-                max={1000000} 
+              <InputGroup
+                label={mode === 'sip' ? "Monthly SIP" : "One-time Investment"}
+                value={amount}
+                min={500}
+                max={1000000}
                 step={500}
                 onChange={setAmount}
                 format={fmt}
               />
-              <InputGroup 
-                label="Expected Return (% p.a)" 
-                value={rate} 
-                min={1} 
-                max={30} 
+              <InputGroup
+                label="Expected Return (% p.a)"
+                value={rate}
+                min={1}
+                max={30}
                 step={0.5}
                 onChange={setRate}
                 format={(v: number) => `${v}%`}
               />
-              <InputGroup 
-                label="Tenure (Years)" 
-                value={years} 
-                min={1} 
-                max={40} 
+              <InputGroup
+                label="Tenure (Years)"
+                value={years}
+                min={1}
+                max={40}
                 step={1}
                 onChange={setYears}
                 format={(v: number) => `${v} Yrs`}
               />
             </div>
 
-            <button 
+            <button
               onClick={handleCalculate}
               disabled={loading}
               className="w-full mt-12 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/30 transition-all flex justify-center items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -165,7 +164,7 @@ export default function Calculator() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ResultCard label="Invested Amount" value={fmt(result.invested)} icon={<IndianRupee className="text-blue-500" />} />
                   <ResultCard label="Estimated Returns" value={fmt(result.gain)} icon={<ArrowUpRight className="text-emerald-500" />} />
-                  
+
                   <div className="md:col-span-2 p-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
                     <div className="relative z-10">
                       <p className="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">Total Expected Wealth</p>
@@ -212,7 +211,6 @@ export default function Calculator() {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }
@@ -226,8 +224,8 @@ function InputGroup({ label, value, min, max, step, onChange, format }: any) {
         <label className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">{label}</label>
         <span className="text-base font-black text-blue-600 dark:text-blue-400 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg">{format(value)}</span>
       </div>
-      <input 
-        type="range" min={min} max={max} step={step} value={value} 
+      <input
+        type="range" min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500 transition-all"
       />

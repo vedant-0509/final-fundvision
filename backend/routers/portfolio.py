@@ -123,21 +123,26 @@ async def get_portfolio(
     }
 
 
+
+
+
+
 @router.post("/add", status_code=201)
 async def add_holding(
     body: AddHoldingRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Add or top-up a fund in the portfolio with ENUM mapping and safe math."""
+    """Add or top-up a fund in the portfolio with proper async handling."""
     
     # 1. Verify Fund exists
     fund_result = await db.execute(select(Fund).where(Fund.id == body.fund_id))
     fund = fund_result.scalar_one_or_none()
     if not fund:
-        raise HTTPException(404, "Fund not found")
+        raise HTTPException(status_code=404, detail="Fund not found")
 
     # 2. Check for existing active holding
+    # We use execution options to ensure we get a fresh object
     existing_result = await db.execute(
         select(PortfolioHolding).where(
             PortfolioHolding.user_id == current_user.id,
@@ -147,26 +152,31 @@ async def add_holding(
     )
     holding = existing_result.scalar_one_or_none()
 
-    # 3. Handle ENUM Mismatches between tables
-    # portfolio_holdings table wants 'lumpsum' or 'sip'
+    # 3. Safe Math & Mapping
     holding_type = "lumpsum" if body.investment_type in ["buy", "lumpsum"] else "sip"
-    # transactions table wants 'buy' or 'sip'
     txn_type = "buy" if body.investment_type in ["buy", "lumpsum"] else "sip"
+    
+    # Handle NAV safely
+    try:
+        nav_val = float(fund.nav) if fund.nav and float(fund.nav) > 0 else 10.0
+    except (ValueError, TypeError):
+        nav_val = 10.0
 
-    # 4. Safe Math for Units (avoiding Decimal/Float conflicts)
-    nav_val = float(fund.nav) if fund.nav and float(fund.nav) > 0 else 10.0
     amount_to_add = float(body.amount)
     units_to_add = amount_to_add / nav_val
 
     try:
         if holding:
-            # Update existing holding
+            # 4a. UPDATE EXISTING (Prevents IntegrityError)
+            # We use float() conversion to ensure SQLAlchemy tracks the change correctly
             holding.invested_amount = float(holding.invested_amount) + amount_to_add
             current_units = float(holding.units_held) if holding.units_held else 0.0
             holding.units_held = current_units + units_to_add
             holding.last_invested = date.today()
+            # Update average NAV if necessary (optional logic)
+            # holding.avg_nav = (float(holding.invested_amount)) / holding.units_held
         else:
-            # Create brand new holding with explicit defaults for MySQL
+            # 4b. INSERT NEW
             holding = PortfolioHolding(
                 user_id=current_user.id,
                 fund_id=body.fund_id,
@@ -179,12 +189,12 @@ async def add_holding(
                 first_invested=date.today(),
                 last_invested=date.today(),
                 is_active=True,
-                notes=body.notes
+                notes=body.notes or "Initial investment"
             )
             db.add(holding)
 
-        # 5. Record the Transaction
-        db.add(Transaction(
+        # 5. Record the Transaction (Always a new entry)
+        new_txn = Transaction(
             user_id=current_user.id,
             fund_id=body.fund_id,
             txn_type=txn_type,
@@ -193,16 +203,110 @@ async def add_holding(
             units=units_to_add,
             txn_date=date.today(),
             notes=body.notes or "Added from Screener"
-        ))
+        )
+        db.add(new_txn)
 
+        # 6. Commit changes
         await db.commit()
         return {"message": "Success", "fund": fund.name}
 
     except Exception as e:
         await db.rollback()
-        # This will print the EXACT reason for the 500 error in your backend terminal
         print(f"CRITICAL DATABASE ERROR: {str(e)}")
-        raise HTTPException(500, detail=f"Database Error: {str(e)}")
+        # If it's still a duplicate error, it means another process inserted it simultaneously
+        if "Duplicate entry" in str(e):
+             raise HTTPException(status_code=400, detail="This fund is already in your portfolio.")
+        raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# @router.post("/add", status_code=201)
+# async def add_holding(
+#     body: AddHoldingRequest,
+#     current_user: User = Depends(get_current_user),
+#     db: AsyncSession = Depends(get_db),
+# ):
+#     """Add or top-up a fund in the portfolio with ENUM mapping and safe math."""
+    
+#     # 1. Verify Fund exists
+#     fund_result = await db.execute(select(Fund).where(Fund.id == body.fund_id))
+#     fund = fund_result.scalar_one_or_none()
+#     if not fund:
+#         raise HTTPException(404, "Fund not found")
+
+#     # 2. Check for existing active holding
+#     existing_result = await db.execute(
+#         select(PortfolioHolding).where(
+#             PortfolioHolding.user_id == current_user.id,
+#             PortfolioHolding.fund_id == body.fund_id,
+#             PortfolioHolding.is_active == True
+#         )
+#     )
+#     holding = existing_result.scalar_one_or_none()
+
+#     holding_type = "lumpsum" if body.investment_type in ["buy", "lumpsum"] else "sip"
+#     txn_type = "buy" if body.investment_type in ["buy", "lumpsum"] else "sip"
+#     nav_val = float(fund.nav) if fund.nav and float(fund.nav) > 0 else 10.0
+#     amount_to_add = float(body.amount)
+#     units_to_add = amount_to_add / nav_val
+
+#     try:
+#         if holding:
+#             holding.invested_amount = float(holding.invested_amount) + amount_to_add
+#             current_units = float(holding.units_held) if holding.units_held else 0.0
+#             holding.units_held = current_units + units_to_add
+#             holding.last_invested = date.today()
+#         else:
+#             holding = PortfolioHolding(
+#                 user_id=current_user.id,
+#                 fund_id=body.fund_id,
+#                 invested_amount=amount_to_add,
+#                 units_held=units_to_add,
+#                 avg_nav=nav_val,
+#                 investment_type=holding_type,
+#                 sip_amount=body.sip_amount or 0.0,
+#                 sip_date=body.sip_date or 1,
+#                 first_invested=date.today(),
+#                 last_invested=date.today(),
+#                 is_active=True,
+#                 notes=body.notes
+#             )
+#             db.add(holding)
+
+#         # 5. Record the Transaction
+#         db.add(Transaction(
+#             user_id=current_user.id,
+#             fund_id=body.fund_id,
+#             txn_type=txn_type,
+#             amount=amount_to_add,
+#             nav_at_txn=nav_val,
+#             units=units_to_add,
+#             txn_date=date.today(),
+#             notes=body.notes or "Added from Screener"
+#         ))
+
+#         await db.commit()
+#         return {"message": "Success", "fund": fund.name}
+
+#     except Exception as e:
+#         await db.rollback()
+#         # This will print the EXACT reason for the 500 error in your backend terminal
+#         print(f"CRITICAL DATABASE ERROR: {str(e)}")
+#         raise HTTPException(500, detail=f"Database Error: {str(e)}")
 
 
 @router.get("/transactions")

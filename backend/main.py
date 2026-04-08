@@ -12,6 +12,12 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
+
+from fastapi import Depends, HTTPException
+from sqlalchemy.orm import Session
+from .database import get_db # Ensure this path points to your database config
+from . import models         # Ensure this points to your models
+
 from .database import engine, Base
 from .config import settings
 from .routers import auth, funds, portfolio, calculator, ai_advisor, market
@@ -86,3 +92,21 @@ except RuntimeError:
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
+
+
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+# ... your other imports (models, database)
+@app.get("/api/v1/funds/{identifier}")
+async def get_fund(identifier: str, db: Session = Depends(get_db)):
+    # Try finding by scheme_code first
+    fund = db.query(models.Fund).filter(models.Fund.scheme_code == identifier).first()
+    
+    # If not found, try searching by database ID
+    if not fund and identifier.isdigit():
+        fund = db.query(models.Fund).filter(models.Fund.id == int(identifier)).first()
+        
+    if not fund:
+        raise HTTPException(status_code=404, detail="Fund not found")
+        
+    return fund
